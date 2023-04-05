@@ -2,7 +2,6 @@ import asyncio
 import json
 import os
 from sys import exit
-from time import time
 
 import ssl
 import websockets
@@ -54,7 +53,7 @@ async def handle_new_data(message: str, websocket, wocc_bot, notifications_logge
     asyncio.create_task(wocc_bot.commands[user_message.strip().casefold()]())
   # Respond in group chat with an invalid command message if what looks like a command isn't.
   elif user_message[0] == "$" and user_message[1:4].isalpha():
-    wocc_bot.post("Unknown command")
+    asyncio.create_task(wocc_bot.post("Unknown command"))
 
 
 async def main():
@@ -75,18 +74,12 @@ async def main():
     async with websockets.connect("wss://push.groupme.com/faye", ssl=context, logger=logger_conf.websocket_logger) as websocket:    
         # Obtain new signature that is able to poll for push events
         await new_signature(websocket, USER_ID, GM_TK)
-        signature_time = time()
 
         # Poll for push events
         await poll_events(websocket)
 
         # Infinite asynchronous iterations through incoming push messages 
-        async for message in websocket:  
-          # Check if signature needs to be refreshed (after 1hr)
-          if (time() - signature_time) >= 3600:
-            await new_signature(websocket, USER_ID, GM_TK)
-            signature_time = time()
-          
+        async for message in websocket: 
           await handle_new_data(message, websocket, wocc_bot, notifications_logger)
           
 

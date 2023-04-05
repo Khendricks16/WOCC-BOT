@@ -9,7 +9,6 @@ async def new_signature(websocket, user_id, gm_tk) -> None:
     """
     Creates a new signature with the GroupMe push service for the account on behalf of the API token.
     This signature will be subscribed to recive push events from the user channel.
-    These signatures according to the documentation must be refreshed every hour.
 
     Creates two global variables: client_id, call_id
 
