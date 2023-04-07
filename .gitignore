@@ -133,3 +133,6 @@ dmypy.json
 
 # Logging messages
 WOCC-BOT/Logs
+
+# All JSON files
+*.json
