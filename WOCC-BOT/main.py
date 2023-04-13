@@ -6,9 +6,9 @@ from sys import exit
 import ssl
 import websockets
 
+from push_service_helpers import new_signature, poll_events
 from bot import Bot
 import logger_conf
-from push_service_helpers import new_signature, poll_events
 
 
 
@@ -42,17 +42,37 @@ async def handle_new_data(message: str, websocket, wocc_bot, notifications_logge
   try:
     user_message = (push_data[0]["data"]["subject"]["text"]).strip().casefold()
     user_message_group_id = push_data[0]["data"]["subject"]["group_id"]
+    user_id = push_data[0]["data"]["subject"]["user_id"] # For checking against admin whitelist
   except (KeyError, IndexError):
     return
 
   notifications_logger.info(push_data[0]["data"]["alert"])
 
-  # Check if that text message was a Bot command and was from the valid group chat
-  if user_message in wocc_bot.commands.keys() and user_message_group_id == wocc_bot.group_id:
+  # Check if the text message was from the valid group chat
+  if user_message_group_id != wocc_bot.group_id:
+    return
+  
+  # Check if the text message was a Bot command 
+  if user_message in wocc_bot.commands.keys():
     # Create coroutine for the following Bot command
-    asyncio.create_task(wocc_bot.commands[user_message.strip().casefold()]())
+    asyncio.create_task(wocc_bot.commands[user_message]())
+    return
+  
+  # Check if the text message was a Admin Bot command
+  with open("admin_whitelist.json", "r") as file:  
+    whitelist = json.load(file)
+
+  if user_message in wocc_bot.admin_commands.keys() and user_id in whitelist:
+    # Create coroutine for the following Admin Bot command
+    asyncio.create_task(wocc_bot.admin_commands[user_message]())
+    return 
+  # Admin command was called from non-admin
+  elif user_message in wocc_bot.admin_commands.keys():
+    asyncio.create_task(wocc_bot.post("Permission denied"))
+    return 
+
   # Respond in group chat with an invalid command message if what looks like a command isn't.
-  elif user_message[0] == "$" and user_message[1:4].isalpha():
+  if user_message[0] == "$" and user_message[1:4].isalpha():
     asyncio.create_task(wocc_bot.post("Unknown command"))
 
 
