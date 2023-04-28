@@ -20,7 +20,7 @@ websocket_RFH.setFormatter(formatter)
 
 websocket_logger = logging.getLogger("websockets.client")
 websocket_logger.addHandler(websocket_RFH)
-websocket_logger.setLevel(logging.DEBUG)
+websocket_logger.setLevel(logging.INFO)
 
 # Notification logger
 
