@@ -241,11 +241,7 @@ class Bot:
     async def smgs_on(self):
         """Activates scheduled reminders to be posted within the chat for coaches to update their tracker for the day. (This is turned on by default when the bot comes online)."""
         
-        # Do nothing if scheduled messages are already turned on
-        tasks = asyncio.all_tasks()
-        for task in tasks:
-            if task.get_name() == "smgs":
-                return
+        self.log.info("Scheduled messages was turned on")
         
         schedule_data = await training_schedule.gather_data()
        
@@ -280,15 +276,15 @@ class Bot:
             # Get the day of the month for day
             day_of_month = today.day + (day - today.weekday())
             
-            # Scheduled times are 3:00PM & 9:00PM for Mon-Fri
-            # but 3:00PM & 10:00PM for Sat 
-            if day == 5:
-                training_days[day] = (datetime.datetime(today.year, today.month, day_of_month, 15, 0, 0),
-                                    datetime.datetime(today.year, today.month, day_of_month, 22, 0, 0) 
+            # Scheduled times are 3:00PM & 9:00PM for Mon-Thur
+            # but 3:00PM & 10:00PM for Fri-Sat
+            if day == 4 or day == 5:
+                training_days[day] = (datetime.datetime(today.year, today.month, day_of_month, 15),
+                                    datetime.datetime(today.year, today.month, day_of_month, 22) 
                 )
             else:
-                training_days[day] = (datetime.datetime(today.year, today.month, day_of_month, 15, 0, 0),
-                                    datetime.datetime(today.year, today.month, day_of_month, 23, 0, 0) 
+                training_days[day] = (datetime.datetime(today.year, today.month, day_of_month, 15),
+                                    datetime.datetime(today.year, today.month, day_of_month, 21) 
                 )
 
         # Fill queue of await times of seconds between scheduled messages
@@ -306,7 +302,6 @@ class Bot:
 
     
         await_queue.sort()
-        
         # Post AUTOMATED_MSG at all scheduled times
         for i, time in enumerate(await_queue):
             if i == 0:
@@ -318,7 +313,7 @@ class Bot:
 
 
         # Finished all automated messages for the week
-        self.log.info("Automated message schedule has finished")
+        self.log.info("All scheduled messages has finished")
         return
          
     async def smgs_off(self):
@@ -327,5 +322,6 @@ class Bot:
         for task in tasks:
             if task.get_name() == "smgs":
                 task.cancel()
-                self.log.info("Scheduled messages task was turned off")
+                asyncio.create_task(self.post("Scheduled messages turned off"))
+                self.log.info("Scheduled messages task was canceled")
 
