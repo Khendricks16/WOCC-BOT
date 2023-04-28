@@ -15,9 +15,10 @@ async def new_signature(websocket, user_id, gm_tk) -> None:
     client_id -> id used to represent the signature
     call_id -> numeric value that represents the ith call to the server
 
-    NOTE: If signature fails, program will exit with exit code 1.
+    NOTE: The Documentation says that the signature must refresh every hour.
+          Also, if getting new signature fails, the program will exit with exit code 1.
     """
-
+    
     # Handshake
     global call_id
     call_id = 1
@@ -57,6 +58,9 @@ async def new_signature(websocket, user_id, gm_tk) -> None:
 
     await websocket.send(json.dumps(payload))
 
+    # Update call_id
+    call_id += 1
+
     # Log subscription status
     subscription = json.loads(await websocket.recv())[0]["successful"]
 
@@ -64,7 +68,7 @@ async def new_signature(websocket, user_id, gm_tk) -> None:
       websocket.logger.info("New Signature Successful")
       return
     else:
-      websocket.logger.fatal("New Signature Failed")
+      websocket.logger.critical("New Signature Failed")
       exit(1)
 
 
