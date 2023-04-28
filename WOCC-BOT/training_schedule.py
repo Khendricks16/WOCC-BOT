@@ -76,10 +76,6 @@ async def clear() -> None:
                                     range=f"{location}!B3:S15").execute()
 
         bot_logger.info("Successfully cleared training schedule")
-        return data
     except HttpError:
         bot_logger.warning("Failed to clear training schedule")
-
-
-
-
+        
