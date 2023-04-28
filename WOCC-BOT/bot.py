@@ -3,6 +3,7 @@ import json
 import requests
 import os
 import time
+import datetime
 
 import training_schedule
 
@@ -52,7 +53,9 @@ class Bot:
 
         admin_commands = {
             "$schedule post": self.schedule_post,
-            "$schedule clear": self.schedule_clear
+            "$schedule clear": self.schedule_clear,
+            "$smgs on": self.smgs_on,
+            "$smgs off": self.smgs_off,
         }
 
         return admin_commands
@@ -147,7 +150,7 @@ class Bot:
 
     async def schedule_post(self):
         """Posts the weekly training schedule inside the group chat in a prettiful format."""
-        message_data = await training_schedule.gather_data()
+        schedule_data = await training_schedule.gather_data()
         messages = [] # Contains all schedule messages that will be posted
         MAX_MSG_LEN = 1000
         curr_msg = ""
@@ -162,19 +165,13 @@ class Bot:
         # Function used to determine if a new message should be created and eventually appended to messages if curr_msg exceeds MAX_MSG_LEN
         exceeds_msg_limit = lambda new_section, msg: True if len(msg) + len(new_section) > MAX_MSG_LEN else False
 
-        for location in message_data:
+        for location in schedule_data:
             # Sub heading in msg for FOH, BOH, GTS
             sub_heading = f"{nl} {nl}+----+{nl} {location} |{nl}+----+{nl}"
-            
-            # Add subheading to msg
-            if exceeds_msg_limit(sub_heading, curr_msg):
-                messages.append(curr_msg)
-                curr_msg = ""
-            
-            curr_msg += sub_heading
 
             # Section for coaches in msg
-            for coach_schedule in message_data[location]:
+            coach_sections = []
+            for coach_schedule in schedule_data[location]:
                 coach_section = ""
 
                 # Disregard adding new section to msg if coach isn't training anyone that week
@@ -196,16 +193,32 @@ class Bot:
                         if not all([trainee, st, et]):
                             continue
 
-                        coach_section += f"{nl} {day} -> {trainee} ({st}-{et})"
+                        coach_section += f"{nl} {day} -> {trainee.title()} ({st}-{et})"
                 except StopIteration:
                     pass
                 
-                # Add coach section to 
-                if exceeds_msg_limit(coach_section, curr_msg):
+                # Add coach section to list of sections for the location
+                coach_sections.append(coach_section)
+            
+            # Don't add subheading or any coach sections if no real data for that location is present
+            if not any(coach_sections):
+                continue
+            
+            # Add sub heading to msg
+            if exceeds_msg_limit(sub_heading, curr_msg):
+                messages.append(curr_msg)
+                curr_msg = ""
+            
+            curr_msg += sub_heading
+            
+            # Add all coach sections right under sub heading to msg
+            for section in coach_sections:
+
+                if exceeds_msg_limit(section, curr_msg):
                     messages.append(curr_msg)
                     curr_msg = ""
                 
-                curr_msg += coach_section
+                curr_msg += section
 
 
         messages.append(curr_msg)
@@ -224,4 +237,95 @@ class Bot:
         
         self.log.info("[ $schedule clear ] command ran")
         asyncio.create_task(self.post("Successfully cleared training schedule."))
+
+    async def smgs_on(self):
+        """Activates scheduled reminders to be posted within the chat for coaches to update their tracker for the day. (This is turned on by default when the bot comes online)."""
+        
+        # Do nothing if scheduled messages are already turned on
+        tasks = asyncio.all_tasks()
+        for task in tasks:
+            if task.get_name() == "smgs":
+                return
+        
+        schedule_data = await training_schedule.gather_data()
+       
+        AUTOMATED_MSG = "THIS IS AN AUTOMATED MSG:\n\nHey coaches! remember to update the coaching tracker for any trainee that you trained today.\n\nThanks :)"
+
+        # Get which days coaches are coaching
+        training_days = {i: False for i in range(7)} # 0 (Monday) - 6 (Saturday)
+
+        for data in schedule_data.values():
+            for coach_schedule in data:
+                iter_data = iter(coach_schedule[1:])
+                try:
+                    for day in range(7):
+                        trainee, st, et = next(iter_data), next(iter_data), next(iter_data)
+
+                        # If any coach is training someone during the week day, then set that day as a "training day"
+                        if all([trainee, st, et]):
+                            training_days[day] = True
+                        else:
+                            continue
+
+                except StopIteration:
+                    pass
+
+        today = datetime.datetime.now()
+
+        # Set the values of training days to a tuple of datetimes as to when a scheduled message should occur that day
+        for day in training_days:
+            if not training_days[day]:
+                continue
+            
+            # Get the day of the month for day
+            day_of_month = today.day + (day - today.weekday())
+            
+            # Scheduled times are 3:00PM & 9:00PM for Mon-Fri
+            # but 3:00PM & 10:00PM for Sat 
+            if day == 5:
+                training_days[day] = (datetime.datetime(today.year, today.month, day_of_month, 15, 0, 0),
+                                    datetime.datetime(today.year, today.month, day_of_month, 22, 0, 0) 
+                )
+            else:
+                training_days[day] = (datetime.datetime(today.year, today.month, day_of_month, 15, 0, 0),
+                                    datetime.datetime(today.year, today.month, day_of_month, 23, 0, 0) 
+                )
+
+        # Fill queue of await times of seconds between scheduled messages
+        await_queue = []
+        for day in training_days:
+            if training_days[day]:
+                schedule_time = training_days[day]
+                delay_duration1 = (schedule_time[0] - today).total_seconds()
+                delay_duration2 = (schedule_time[1] - today).total_seconds()
+                
+
+                for delay in [delay_duration1, delay_duration2]:
+                    if delay > 0: # Any times that have already passed, don't add to queue
+                        await_queue.append(delay)
+
+    
+        await_queue.sort()
+        
+        # Post AUTOMATED_MSG at all scheduled times
+        for i, time in enumerate(await_queue):
+            if i == 0:
+                await asyncio.sleep(time)
+            else:
+                await asyncio.sleep(time - sum(await_queue[:i]))
+
+            asyncio.create_task(self.post(AUTOMATED_MSG))
+
+
+        # Finished all automated messages for the week
+        self.log.info("Automated message schedule has finished")
+        return
+         
+    async def smgs_off(self):
+        """Turns off scheduled reminders messages if turned on."""
+        tasks = asyncio.all_tasks()
+        for task in tasks:
+            if task.get_name() == "smgs":
+                task.cancel()
+                self.log.info("Scheduled messages task was turned off")
 
