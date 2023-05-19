@@ -132,7 +132,7 @@ dmypy.json
 .vscode
 
 # Logging messages
-WOCC-BOT/Logs
+GroupMe-Chatbot/Logs
 
 # All JSON files
 *.json
