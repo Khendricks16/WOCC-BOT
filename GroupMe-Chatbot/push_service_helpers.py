@@ -8,14 +8,14 @@ from sys import exit
 async def new_signature(websocket, user_id, gm_tk) -> None:
     """
     Creates a new signature with the GroupMe push service for the account on behalf of the API token.
-    This signature will be subscribed to recive push events from the user channel.
+    This signature will be subscribed to receive push events from the user channel.
 
     Creates two global variables: client_id, call_id
 
     client_id -> id used to represent the signature
     call_id -> numeric value that represents the ith call to the server
 
-    NOTE: The Documentation says that the signature must refresh every hour.
+    NOTE: The documentation says that the signature must refresh every hour.
           Also, if getting new signature fails, the program will exit with exit code 1.
     """
     
@@ -74,7 +74,7 @@ async def new_signature(websocket, user_id, gm_tk) -> None:
 
 async def poll_events(websocket) -> None:
   """
-  Polls the GroupMe push service for events that you are subscribed to recieve.
+  Polls the GroupMe push service for events that you are subscribed to receive.
   Poll times out after 600000 ms (10 minutes).
   """
 

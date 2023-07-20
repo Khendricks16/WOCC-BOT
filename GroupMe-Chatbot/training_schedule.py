@@ -39,7 +39,7 @@ async def gather_data() -> dict:
         ...
     }
 
-    On a failed call to the API, a empty dict will be returned.
+    On a failed call to the API, an empty dict will be returned.
     """
     
     data = dict()
