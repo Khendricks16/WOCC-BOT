@@ -46,15 +46,14 @@ async def gather_data() -> dict:
 
     try:
         service = build("sheets", "v4", credentials=creds)
+        sheet = service.spreadsheets()
         
         # Call the Sheets API
-        sheet = service.spreadsheets()
-
-        for location in ["FOH", "BOH", "GTS"]:
-            result = sheet.values().get(spreadsheetId=SPREADSHEET_ID,
-                                    range=f"{location}!A3:S15").execute()
-
-            data[location] = result.get('values', [])
+        result = sheet.values().batchGet(spreadsheetId=SPREADSHEET_ID,
+                                    ranges=[f"{location}!A3:S15" for location in ("FOH", "BOH", "GTS")]).execute()
+        # Load data into dict
+        for range in result["valueRanges"]:
+            data[range["range"]] = range.get("values", [])
         
         bot_logger.info("Successfuly gathered training schedule data")
         return data
@@ -67,15 +66,17 @@ async def clear() -> None:
     """Calls the google sheets API and clears all training schedule data within the training google sheet."""
     try:
         service = build("sheets", "v4", credentials=creds)
-        
-        # Call the Sheets API
         sheet = service.spreadsheets()
 
-        for location in ["FOH", "BOH", "GTS"]:
-            result = sheet.values().clear(spreadsheetId=SPREADSHEET_ID,
-                                    range=f"{location}!B3:S15").execute()
+        
+        batch_clear_values_request_body = {
+            'ranges': [f"{location}!B3:S15" for location in ("FOH", "BOH", "GTS")]
+        }
+        
+        # Call the Sheets API
+        result = sheet.values().batchClear(spreadsheetId=SPREADSHEET_ID,
+                                body=batch_clear_values_request_body).execute()
 
         bot_logger.info("Successfully cleared training schedule")
     except HttpError:
         bot_logger.warning("Failed to clear training schedule")
-        
