@@ -65,7 +65,7 @@ async def handle_new_data(message: str, websocket, wocc_bot, notifications_logge
   # Check if the text message was a Bot command 
   if user_message in wocc_bot.commands.keys():
     # Create coroutine for the following Bot command
-    asyncio.create_task(wocc_bot.commands[user_message]())
+    wocc_bot.commands[user_message]()
     return
   
   # Check if the text message was an admin Bot command
@@ -80,22 +80,22 @@ async def handle_new_data(message: str, websocket, wocc_bot, notifications_logge
       tasks = asyncio.all_tasks()
       for task in tasks:
           if task.get_name() == "smsgs":
-            asyncio.create_task(wocc_bot.post("Scheduled messages have already been turned on"))
+            wocc_bot.post("Scheduled messages have already been turned on")
             return
             
       asyncio.create_task(wocc_bot.admin_commands[user_message](), name="smsgs")
-      asyncio.create_task(wocc_bot.post("Scheduled messages turned on")) # Done outside of acutal Bot method in order to not post message when the program starts
+      wocc_bot.post("Scheduled messages turned on") # Done outside of acutal Bot method in order to not post message when the program starts
     else:
-      asyncio.create_task(wocc_bot.admin_commands[user_message]())
+      wocc_bot.admin_commands[user_message]()
     return 
   # If an admin command was called from non-admin
   elif user_message in wocc_bot.admin_commands.keys():
-    asyncio.create_task(wocc_bot.post("Permission denied"))
+    wocc_bot.post("Permission denied")
     return 
 
   # Respond in the group chat with an invalid command message if what looks like a command isn't.
   if user_message[0] == "$" and user_message[1:4].isalpha():
-    asyncio.create_task(wocc_bot.post("Unknown command"))
+    wocc_bot.post("Unknown command")
 
 
 async def main():

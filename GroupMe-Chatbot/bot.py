@@ -61,7 +61,7 @@ class Bot:
         return admin_commands
 
 
-    async def post(self, text: str) -> None:
+    def post(self, text: str) -> None:
         """Sends a textual post to the bots group chat with the given text."""
 
         payload = {
@@ -74,16 +74,16 @@ class Bot:
         self.log.info("Bot posted a message")
     
 
-    async def status(self):
+    def status(self):
         """Returns the status of which systems are operational  or not. If no response is returned, then all systems are offline."""
 
         self.log.info("[ $status ] command ran")
 
         # Post message notifying that systems are online.
-        asyncio.create_task(self.post("All systems operational \U0001F7E2"))
+        self.post("All systems operational \U0001F7E2")
         
     
-    async def store_number(self):
+    def store_number(self):
         """Returns the store number for the store location."""
 
         message = f"Store Number: {os.getenv('STORE_NUMBER')}"
@@ -91,10 +91,10 @@ class Bot:
         self.log.info("[ $store # ] command ran")
         
         # Post store number message
-        asyncio.create_task(self.post(message))
+        self.post(message)
         
     
-    async def day_one(self):
+    def day_one(self):
         """Returns helpful links for day one coaching."""
 
         self.log.info("[ $day1 ] command ran")
@@ -111,19 +111,19 @@ class Bot:
         message += f"\n\nHotSchedules -> {HSTeam_app_link}"
 
         # Post message
-        asyncio.create_task(self.post(message))
+        self.post(message)
 
 
-    async def policy_manual(self):
+    def policy_manual(self):
         """Returns the stores policy manual."""
 
         self.log.info("[ $policy manual ] command ran")
 
         # Post link to the policy manual
-        asyncio.create_task(self.post(os.getenv("POLICY_MANUAL_URL")))
+        self.post(os.getenv("POLICY_MANUAL_URL"))
 
 
-    async def help(self):
+    def help(self):
         """Displays all of the available Bot commands.""" 
 
         message = ""
@@ -140,22 +140,22 @@ class Bot:
         self.log.info("[ $help ] command ran")
 
         # Post message with commands and their descriptions
-        asyncio.create_task(self.post(message))
+        self.post(message)
     
-    async def schedule_link(self):
+    def schedule_link(self):
         """Posts the link to the Google Sheets on where the weekly schedule can be found."""
         
         # Post link to group chat
-        asyncio.create_task(self.post(os.getenv("SPREADSHEET_LINK")))
+        self.post(os.getenv("SPREADSHEET_LINK"))
 
-    async def schedule_post(self):
+    def schedule_post(self):
         """Posts the weekly training schedule inside the group chat in a prettiful format."""
         
         # Let the chat know that the google sheets api call may take a minute
-        await self.post("Getting the schedule, this may take a minute...")
+        self.post("Getting the schedule, this may take a minute...")
         
         # Obtain schedule data
-        schedule_data = await training_schedule.gather_data()
+        schedule_data = training_schedule.gather_data()
         messages = [] # Contaisns all the schedule messages that will be posted
         MAX_MSG_LEN = 1000
         curr_msg = ""
@@ -225,20 +225,20 @@ class Bot:
 
         # Post formulated message
         for msg in messages:
-            asyncio.create_task(self.post(msg))
+            self.post(msg)
 
     
-    async def schedule_clear(self):
+    def schedule_clear(self):
         """Completely clears all weekly training schedule data inside of the tables in the google sheet."""
         
         # Let the chat know that the google sheets api call may take a minute
-        await self.post("Clearing the schedule, this may take a minute...")
+        self.post("Clearing the schedule, this may take a minute...")
         
         # Clear training schedule
-        await training_schedule.clear()
+        training_schedule.clear()
         
         self.log.info("[ $schedule clear ] command ran")
-        asyncio.create_task(self.post("Successfully cleared training schedule."))
+        self.post("Successfully cleared training schedule.")
 
     async def smsgs_on(self):
         """Activates scheduled reminders to be posted within the chat every (Mon., Wed., and Fri.) for coaches to update their tracker (This is turned on by default when the bot comes online)."""
@@ -292,20 +292,20 @@ class Bot:
                     # Accounts for the time already awaited/passed from the previous scheduled time, when awaiting the next time
                     await asyncio.sleep(time - sum(smsgs_queue[:i]))
 
-                asyncio.create_task(self.post(AUTOMATED_MSG))
+                self.post(AUTOMATED_MSG)
 
             # Finished all automated messages for the week
             self.log.info("Week of scheduled messages has finished")
             
          
-    async def smsgs_off(self):
+    def smsgs_off(self):
         """Turns off scheduled reminder messages if turned on."""
         tasks = asyncio.all_tasks()
         for task in tasks:
             if task.get_name() == "smsgs":
                 task.cancel()
-                asyncio.create_task(self.post("Scheduled messages turned off"))
+                self.post("Scheduled messages turned off")
                 self.log.info("Scheduled messages task was canceled")
                 return
         
-        asyncio.create_task(self.post("Scheduled messages have already been turned off"))
+        self.post("Scheduled messages have already been turned off")

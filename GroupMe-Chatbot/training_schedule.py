@@ -1,5 +1,4 @@
 import os
-import asyncio
 
 from logger_conf import bot_logger
 
@@ -20,7 +19,7 @@ creds = service_account.Credentials.from_service_account_file(
 SPREADSHEET_ID = os.getenv("SPREADSHEET_ID")
 
 
-async def gather_data() -> dict:
+def gather_data() -> dict:
     """
     Returns a dict of the weekly training schedule data from the google sheet.
     
@@ -62,7 +61,7 @@ async def gather_data() -> dict:
         return dict()
 
 
-async def clear() -> None:
+def clear() -> None:
     """Calls the google sheets API and clears all training schedule data within the training google sheet."""
     try:
         service = build("sheets", "v4", credentials=creds)
