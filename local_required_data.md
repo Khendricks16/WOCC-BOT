@@ -1,5 +1,5 @@
 # All Environment Variables For Repository #
-The following is all the required environment variables needed for full functionally of the program in a shell script format:
+The following are all the required environment variables needed for full functionality of the program in a shell script format:
 ```sh
 export GM_TK="" # GroupMe API Token
 export USER_ID="" # GroupMe User ID For Account The Bot Will Run Under
@@ -17,7 +17,7 @@ export SPREADSHEET_ID="" # ID To Google Sheet
 ```
 
 # Admin Whitelist #
-Within the GroupMe-Chatbot directory, you will need a whitelist JSON file containing the GroupMe ID's and the persons name for reference in order to successfully allow that person to use the admin commands found within the bot commands. The following file should look like:
+Within the GroupMe-Chatbot directory, you will need a whitelist JSON file containing the GroupMe ID's and the person's name for reference in order to successfully allow that person to use the admin commands found within the bot commands. The following file should look like this:
 ```json
 {
     "GROUPMEID": "PERSON'S NAME",
@@ -28,7 +28,7 @@ Within the GroupMe-Chatbot directory, you will need a whitelist JSON file contai
 ```
 
 # Google Service Account Key #
-The JSON file containing the google service account you will use to interact with the google sheets training schedule. The following format should look like:
+The JSON file containing the Google service account you will use to interact with the google sheets training schedule. The following format should look like this:
 ```json
 {
   "type": "service_account",
@@ -45,3 +45,6 @@ The JSON file containing the google service account you will use to interact wit
 ```
 
 For more information about Google Service Accounts visit [here](https://cloud.google.com/iam/docs/service-account-overview).
+
+# Logs Directory # 
+You might also need to make a Logs/ directory inside of the GroupMe-Chatbot directory as you might receive a FileNotFound exception. 
